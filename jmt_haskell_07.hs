@@ -72,8 +72,8 @@ main = do 
   putStrLn . show $ fst' k
 
   putStr "Part 2: "
-  let test = findBadTree t k
-  let tt = last test
+  let t2 = findBadTree t k
+  let tt = last t2
   let ts = map (getWeights t) tt
   let ts' = map (\x-> x - minimum ts) ts
   let tq = map (snd') tt

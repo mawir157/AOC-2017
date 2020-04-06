@@ -4,7 +4,7 @@ modMult :: Integer -> Integer -> Integer -> Integer
 modMult p i a = (i * a) `mod` p
 
 getPowers :: Integer -> (Integer, Integer) -> [Integer]
-getPowers p (i, a) = map (\x -> x `mod` base16) . scanl (modMult p) i $ repeat a
+getPowers p (i, a) = map (\x -> x `mod` base16) . scanl (modMult p) (i * a) $ repeat a
 
 filtRedPowers :: Integer -> Integer -> (Integer, Integer) -> [Integer]
 filtRedPowers b p (i, a) = map (\x -> x `mod` base16) t
