@@ -16,7 +16,7 @@ captcha2 x = sum . map (fst) $ filter (\x -> (fst x) == (snd x)) z
         z = zip x x'
 
 main = do 
-  f <- readFile "jmt_input_01.txt"
+  f <- readFile "input_01.txt"
   let t = parseInput . head $ lines f
   putStr "Part 1: "
   putStrLn . show $ captcha t

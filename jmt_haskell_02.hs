@@ -17,7 +17,7 @@ getPairs [x] = []
 getPairs (x:xs) = map (\t -> (x, t)) xs ++ getPairs xs
 
 main = do 
-  f <- readFile "jmt_input_02.txt"
+  f <- readFile "input_02.txt"
   let t = parseInput $ lines f
   putStr "Part 1: "
   putStrLn . show $ checkSum t

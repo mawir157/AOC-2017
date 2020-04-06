@@ -31,7 +31,7 @@ intToHexString :: Int -> String
 intToHexString n = printf "%02x" n
 
 main = do 
-  f <- readFile "jmt_input_10.txt"
+  f <- readFile "input_10.txt"
   let i = parseInput f
   let (_,_,k) = foldl apply (0,0,[0,1..255]) i
   putStr "Part 1: "

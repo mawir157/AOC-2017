@@ -29,7 +29,7 @@ run' (c, p)
   where p' = tick' p
 
 main = do 
-  f <- readFile "jmt_input_05.txt"
+  f <- readFile "input_05.txt"
   let t = Vec.fromList . parseInput $ lines f
   putStr "Part 1: "
   let p = (0, t)

@@ -45,7 +45,7 @@ repList :: Int -> [a] -> [a]
 repList n xs = take (n * length xs) $ cycle xs
 
 main = do 
-  f <- readFile "jmt_input_16.txt"
+  f <- readFile "input_16.txt"
   let i = parseInput f
   let t = ['a','b'..'p']
 

@@ -22,7 +22,7 @@ iterateUntilRep f (x, seen)
   | otherwise     = iterateUntilRep f (f x, seen ++ [x])
 
 main = do 
-  f <- readFile "jmt_input_06.txt"
+  f <- readFile "input_06.txt"
   let t = parseInput . head $ lines f
   putStr "Part 1: "
   let r = iterateUntilRep redist (t, [])

@@ -30,7 +30,7 @@ buildAllNetworks (ss, ms)
   where (ss', ms') = buildNetwork (ss, ms)
 
 main = do 
-  f <- readFile "jmt_input_12.txt"
+  f <- readFile "input_12.txt"
   let i = map (parseInput) $ lines f
   putStr "Part 1: "
   let (s', i') = buildNetwork ([0], i)

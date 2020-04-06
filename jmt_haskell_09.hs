@@ -18,7 +18,7 @@ score (i, (s:ss), p)
   | otherwise = score (i, ss, p)
 
 main = do 
-  f <- readFile "jmt_input_09.txt"
+  f <- readFile "input_09.txt"
   let i = head $ lines f
   let (_,_,s) = score (0, santize i, 0)
   putStr "Part 1: "

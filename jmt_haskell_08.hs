@@ -66,7 +66,7 @@ inc x (op, y)
   | op == DEC = x - y
 
 main = do 
-  f <- readFile "jmt_input_08.txt"
+  f <- readFile "input_08.txt"
   let t = map (parseInput) $ lines f
   putStr "Part 1: "
   let r = foldl (applyInstr) [] t

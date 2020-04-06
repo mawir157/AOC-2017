@@ -76,7 +76,7 @@ run (rs, freq, p) ins
   where (cmd, ch, v, vp) = head (drop p ins) 
 
 main = do 
-  f <- readFile "jmt_input_18.txt"
+  f <- readFile "input_18.txt"
   let ins = map (parseLine) $ lines f
 
   -- let ins = [(SET, 'a', 1, '*'),  (ADD, 'a', 2, '*'), (MUL, 'a', -1, 'a'),

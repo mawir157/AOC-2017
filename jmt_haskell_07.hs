@@ -56,35 +56,27 @@ findRoot x p
   | otherwise = findRoot x p'
   where p' = findParent x p
 
+findBadTree :: [Node] -> Node -> [[Node]]
+findBadTree t k
+  | (length $ nub s) == 1 = []
+  | otherwise             = [a] ++ findBadTree t k'
+  where a = findChildren t k
+        s = map (getWeights t) a
+        k' = wrongWeight t k
+
 main = do 
-  f <- readFile "jmt_input_07.txt"
+  f <- readFile "input_07.txt"
   let t = map (parseInput) $ lines f
   putStr "Part 1: "
   let k = findRoot t (head t)
   putStrLn . show $ fst' k
 
-  let a = findChildren t k
-  let s' = map (getWeights t) a
-  putStrLn . show $ map (fst') a
-  putStrLn . show $ s'
-  let k' = wrongWeight t k
-
-  let a' = findChildren t k'
-  let s'' = map (getWeights t) a'
-  putStrLn . show $ map (fst') a'
-  putStrLn . show $ s''
-  let k'' = wrongWeight t k'
-
-  let a2 = findChildren t k''
-  let s3 = map (getWeights t) a2
-  putStrLn . show $ map (fst') a2
-  putStrLn . show $ s3
-  let k3 = wrongWeight t k''
-
-  let a3 = findChildren t k3
-  let s4 = map (getWeights t) a3
-  putStrLn . show $ map (fst') a3
-  putStrLn . show $ s4
-  let k4 = wrongWeight t k3
-
   putStr "Part 2: "
+  let test = findBadTree t k
+  let tt = last test
+  let ts = map (getWeights t) tt
+  let ts' = map (\x-> x - minimum ts) ts
+  let tq = map (snd') tt
+  let r = zip ts' tq
+  let p = head $ dropWhile (\x -> fst x == 0) r
+  putStrLn $ show ((snd p) - (fst p))

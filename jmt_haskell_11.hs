@@ -54,7 +54,7 @@ getLength xs = sum $ map snd h
   where h = sixthReduce $ frequency xs
 
 main = do 
-  f <- readFile "jmt_input_11.txt"
+  f <- readFile "input_11.txt"
   let i = parseInput . head $ lines f
   putStr "Part 1: "
   putStrLn . show $ getLength i

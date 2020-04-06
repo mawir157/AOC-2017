@@ -55,7 +55,7 @@ parseInput s = (lhs, 0, rhs, True)
         rhs = read (last s') :: Integer
 
 main = do 
-  f <- readFile "jmt_input_13.txt"
+  f <- readFile "input_13.txt"
   let i = map (parseInput) $ lines f
 
   putStr "Part 1: "
