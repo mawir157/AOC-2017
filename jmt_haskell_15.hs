@@ -11,8 +11,8 @@ filtRedPowers b p (i, a) = map (\x -> x `mod` base16) t
   where t = filter (\x -> x `mod` b == 0) $ getPowers p (i, a)
 
 main = do 
-  let i1 = (722, 16807) 
-  let i2 = (354, 48271)
+  let i1 = (116, 16807) 
+  let i2 = (299, 48271)
   let p  = 2147483647
 
   putStr "Part 1: "

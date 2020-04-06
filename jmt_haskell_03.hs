@@ -17,7 +17,7 @@ manDist (a,b) = (abs a) + (abs b)
 
 main = do 
   putStr "Part 1: "
-  putStrLn . show . manDist $ fn 277678
+  putStrLn . show . manDist $ fn 312051
   putStr "Part 2: "
   putStrLn " "
 

@@ -4,7 +4,7 @@ import qualified Data.Foldable as Fold
 click :: (Int, Int, Seq.Seq Int) -> (Int, Int, Seq.Seq Int)
 click (i, pos, xs) = (i', pos', Seq.insertAt pos' i' xs)
   where i' = i + 1
-        pos' = 1 + ((pos + 344) `mod` (length xs))
+        pos' = 1 + ((pos + 328) `mod` (length xs))
 
 main = do 
   putStr "Part 1: "
