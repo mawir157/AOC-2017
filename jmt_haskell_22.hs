@@ -1,10 +1,17 @@
 import Data.List
+import Data.Maybe
+import Data.Map (Map)
+import qualified Data.Map as Map
 
-data Mode = CLEAN | WEAK | INF | FLAG deriving (Eq, Show, Ord)
+import Debug.Trace
+
+data Mode = CLEAN | WEAK | INF | FLAG | ERR deriving (Eq, Show, Ord)
 type Point = (Integer, Integer)
 type Virus = (Integer, Point)
 type Agar  = (Mode, Point)
-type StepFn = (([Agar], Virus) -> (([Agar], Virus), Mode))
+
+type AgarM = Map Point Mode
+type StepFn = ((AgarM, Virus) -> ((AgarM, Virus), Mode))
 
 if' True x _  = x
 if' False _ x = x
@@ -33,46 +40,39 @@ virusRot m (d, p)
   | m == INF   = ((d + 1) `mod` 4, p)
   | m == WEAK  = ((d) `mod` 4, p)
   | m == CLEAN = ((d - 1) `mod` 4, p)
+  | otherwise = error ("Mode = " ++ (show m))
 
-click2 :: StepFn
-click2 (live, v)
-  | m == FLAG  = ((live',                v'), CLEAN)
-  | m == INF   = (([(FLAG, p)] ++ live', v'), FLAG)
-  | m == WEAK  = (([(INF, p)] ++ live',  v'), INF)
-  | m == CLEAN = (([(WEAK, p)] ++ live', v'), WEAK)
+modeChange :: Mode -> Maybe Mode
+modeChange m
+  | m == CLEAN = Just INF
+  | m == INF   = Just CLEAN
+  | otherwise  = Just ERR
+
+modeChange2 :: Mode -> Maybe Mode
+modeChange2 m
+  | m == CLEAN = Just WEAK
+  | m == WEAK  = Just INF
+  | m == INF   = Just FLAG
+  | m == FLAG  = Just CLEAN
+  | otherwise  = Just ERR
+
+click :: (Mode -> Maybe Mode) -> StepFn
+click f (live, v)
+  | not (Map.member p live) = ((Map.insert p n live, v'), n)
+  | otherwise = ((Map.update f p live, v'), m')
   where p = snd v
-        m = getModeAt p live
-        live' = filter (\(_,x) -> x /= p) live
+        n = fromMaybe ERR (f CLEAN)
+        m = fromMaybe CLEAN (Map.lookup p live)
+        m' = fromMaybe ERR (f m)
         v' = virusMove $ virusRot m v
 
-click :: StepFn 
-click (live, v)
-  | m == INF     = ((live', v'), CLEAN)
-  | m == CLEAN   = ((live' ++ [(INF, p)], v'), INF)
-  where p = snd v
-        m = getModeAt p live
-        live' = filter (\(_,x) -> x /= p) live
-        v' = virusMove $ virusRot m v
-
-getModeAt :: Point -> [Agar] -> Mode
-getModeAt p live
-  | not $ elem p points = CLEAN
-  | otherwise = fst . head $ dropWhile (\(_, x) -> x /= p) live
-  where points = map (snd) live
-
-run' :: StepFn -> Integer -> ([Agar], Virus) -> ([Agar], Virus)
-run' f n k
-  | n == 0    = k
-  | otherwise = run' f (n-1) k'
-  where (k', _) = f k
-
-runCount' :: StepFn -> Integer -> (([Agar], Virus), Integer) -> (([Agar], Virus), Integer)
-runCount' f n (k, c)
+runCount :: (Mode -> Maybe Mode) -> Integer -> ((AgarM, Virus), Integer) -> ((AgarM, Virus), Integer)
+runCount f n (k, c)
   | n == 0    = (k, c)
-  | otherwise = runCount' f (n-1) (k', c + t) 
-  where (!k', !m) = f k
+  | otherwise = runCount f (n - 1) (k', c + t) 
+  where (!k', !m) = (click f) k
         !t = if' (m == INF) 1 0
-
+--------------------------------------------------------------------------------
 main :: IO()
 main = do
   f <- readFile "input_22.txt"
@@ -81,18 +81,13 @@ main = do
 
   let t = parseInput (s - 1) l
   let m = s `div` 2
-  -- putStrLn $ show t
-  -- putStrLn $ show m
-
-  -- let t = [(INF,(1,1)), (INF,(-1,0))]
-  -- let m = 0
 
   let v = (0, (m,m))
 
+  let t_m = Map.fromList( map (\(x,y) -> (y,x)) t)
   putStr "Part 1: "
-  putStrLn . show $ snd $ runCount' click 10000 ((t, v), 0)
+  let tm = runCount modeChange 10000 ((t_m, v), 0)
+  putStrLn . show $ snd tm
   putStr "Part 2: "
-  let ((t',v'), c) = runCount' click2 1000000 ((t, v), 0)
-  putStrLn $ show c
-
- 
+  let tm = runCount modeChange2 10000000 ((t_m, v), 0)
+  putStrLn . show $ snd tm
