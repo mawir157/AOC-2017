@@ -3,8 +3,6 @@ import Data.Maybe
 import Data.Map (Map)
 import qualified Data.Map as Map
 
-import Debug.Trace
-
 data Mode = CLEAN | WEAK | INF | FLAG | ERR deriving (Eq, Show, Ord)
 type Point = (Integer, Integer)
 type Virus = (Integer, Point)
