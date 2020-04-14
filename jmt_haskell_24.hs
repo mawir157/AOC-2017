@@ -4,7 +4,6 @@ import Data.List.Split
 
 type Comp = (Integer, Integer)
 type Bridge = [Comp]
-
 type BdgState = (Bridge, [Comp])
 
 parseLine :: String -> Comp

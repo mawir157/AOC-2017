@@ -2,14 +2,22 @@
 
 for i in $(seq -f "%02g" 1 25)
 do
-  ghc jmt_haskell_$i.hs -O2 -XBangPatterns
+  if test -f jmt_haskell_$i.hs;
+  then
+    ghc jmt_haskell_$i.hs -O2
+  fi
 done
 
 for i in $(seq -f "%02g" 1 25)
 do
   echo "Day $i" 
-  ./jmt_haskell_$i
-  rm jmt_haskell_$i.hi
-  rm jmt_haskell_$i.o
-  rm jmt_haskell_$i
+  if test -f jmt_haskell_$i;
+  then
+    ./jmt_haskell_$i
+    rm jmt_haskell_$i.hi
+    rm jmt_haskell_$i.o
+    rm jmt_haskell_$i
+  else
+    echo "Does not exist"
+  fi
 done
