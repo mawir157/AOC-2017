@@ -2,7 +2,7 @@
 
 for i in $(seq -f "%02g" 1 25)
 do
-  ghc jmt_haskell_$i.hs -O2
+  ghc jmt_haskell_$i.hs -O2 -XBangPatterns
 done
 
 for i in $(seq -f "%02g" 1 25)
