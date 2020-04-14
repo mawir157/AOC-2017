@@ -1,10 +1,14 @@
 #!/bin/bash
-
 for i in $(seq -f "%02g" 1 25)
 do
   if test -f jmt_haskell_$i.hs;
   then
-    ghc jmt_haskell_$i.hs -O2
+    if [[ [17,22] =~ $i ]]
+    then
+      ghc jmt_haskell_$i.hs -O2 -XBangPatterns
+    else 
+      ghc jmt_haskell_$i.hs -O2
+    fi
   fi
 done
 
