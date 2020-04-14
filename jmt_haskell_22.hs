@@ -6,19 +6,18 @@ import qualified Data.Map as Map
 data Mode = CLEAN | WEAK | INF | FLAG | ERR deriving (Eq, Show, Ord)
 type Point = (Integer, Integer)
 type Virus = (Integer, Point)
-type Agar  = (Mode, Point)
 
-type AgarM = Map Point Mode
-type StepFn = ((AgarM, Virus) -> ((AgarM, Virus), Mode))
+type Agar = Map Point Mode
+type StepFn = ((Agar, Virus) -> ((Agar, Virus), Mode))
 
 if' True x _  = x
 if' False _ x = x
 
-parseInput :: Integer -> [String] -> [Agar]
+parseInput :: Integer -> [String] -> [(Mode, Point)]
 parseInput n [] = []
 parseInput n (s:ss) = (parseLine n s) ++ parseInput (n-1) ss
 
-parseLine :: Integer-> String -> [Agar]
+parseLine :: Integer-> String -> [(Mode, Point)]
 parseLine n s = zip (replicate c INF) (zip b (replicate c n)) 
   where l = length s
         k = zip s [0..(toInteger (l - 1))]
@@ -64,7 +63,7 @@ click f (live, v)
         m' = fromMaybe ERR (f m)
         v' = virusMove $ virusRot m v
 
-runCount :: (Mode -> Maybe Mode) -> Integer -> ((AgarM, Virus), Integer) -> ((AgarM, Virus), Integer)
+runCount :: (Mode -> Maybe Mode) -> Integer -> ((Agar, Virus), Integer) -> ((Agar, Virus), Integer)
 runCount f n (k, c)
   | n == 0    = (k, c)
   | otherwise = runCount f (n - 1) (k', c + t) 
