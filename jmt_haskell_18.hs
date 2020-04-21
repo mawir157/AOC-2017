@@ -1,31 +1,56 @@
 import Data.List
 import Data.List.Split
 
+import Debug.Trace
+
 type Regs = [(Char, Integer)]
 data Command = ADD | JGZ | MUL | MOD | RCV | SND | SET deriving (Eq, Show)
-type Instruction = (Command, Char, Integer, Char)
-type Machine = (Regs, Integer, Int) -- (registries, last frequency, position)
+type Dual = (Char, Integer, Bool) -- true = use char
+nullDual = ('.', -1, False)
+type Instruction = (Command, Dual, Dual)
+-- (registries, position, in queue, out queue)
+type Machine = (Regs, Int, [Integer], [Integer])
 
 if' True  x _ = x
 if' False _ y = y
 
+charToDual :: String -> Dual
+charToDual s
+  | b         = (c, -1, b)
+  | otherwise = ('*', v, b)
+  where c = head s
+        b = c `elem` ['a'..'z']
+        v = if' (b) (-1) (read (s) :: Integer)
+
 parseLine :: String -> Instruction
 parseLine s
-  | cmd == "add" = (ADD, ch, v, p)
-  | cmd == "jgz" = (JGZ, ch, v, p)
-  | cmd == "mul" = (MUL, ch, v, p)
-  | cmd == "mod" = (MOD, ch, v, p)
-  | cmd == "rcv" = (RCV, ch, -1, '*')
-  | cmd == "snd" = (SND, ch, -1, '*')
-  | cmd == "set" = (SET, ch, v, p)
+  | cmd == "add" = (ADD, d1, d2)
+  | cmd == "jgz" = (JGZ, d1, d2)
+  | cmd == "mul" = (MUL, d1, d2)
+  | cmd == "mod" = (MOD, d1, d2)
+  | cmd == "rcv" = (RCV, d1, nullDual)
+  | cmd == "snd" = (SND, d1, nullDual)
+  | cmd == "set" = (SET, d1, d2)
   | otherwise = error s
   where s' = splitOn " " s
         cmd = s'!!0 -- three char string
-        ch = head $ s'!!1 -- single char
-        t = s'!!2
-        b = (head t) `elem` ['a'..'z']
-        v = if' (b) (-1) (read (t) :: Integer)
-        p = if' (b) (head t) '*'
+        d1 = charToDual (s'!!1)
+        d2 = charToDual (s'!!2)
+        -- ch = head $ s'!!1 -- single char
+        -- t = s'!!2
+        -- b = (head t) `elem` ['a'..'z']
+        -- v = if' (b) (-1) (read (t) :: Integer)
+        -- d = (head t, v , b)
+
+evalInt :: Regs -> Dual -> Integer
+evalInt rs (c, v, b)
+  | not b     = v
+  | otherwise = getRegAt rs c
+
+evalChar :: Dual -> Char
+evalChar (c, _, b)
+  | b         = c
+  | otherwise = error "Should Never Be Hit"
 
 getRegAt :: Regs -> Char -> Integer
 getRegAt rs c = snd . head $ dropWhile (\x -> fst x /= c) rs
@@ -37,12 +62,13 @@ unpack :: Regs -> Integer -> Integer
 unpack rs v = if' (v < 0) (getRegAt rs (toEnum $ fromIntegral (-1 * v))) (v)
 
 apply :: Regs -> Instruction -> Regs
-apply rs (cmd, reg, v, vp)
-  | cmd == ADD = cmdAdd rs reg v'
-  | cmd == MOD = cmdMod rs reg v'
-  | cmd == MUL = cmdMul rs reg v'
-  | cmd == SET = cmdSet rs reg v'
-  where v' = if' (vp == '*') v (getRegAt rs vp)
+apply rs (cmd, reg1, dual)
+  | cmd == ADD = cmdAdd rs reg v2
+  | cmd == MOD = cmdMod rs reg v2
+  | cmd == MUL = cmdMul rs reg v2
+  | cmd == SET = cmdSet rs reg v2
+  where reg = evalChar reg1
+        v2 = evalInt rs dual
 
 cmdAdd :: Regs -> Char -> Integer -> Regs
 cmdAdd rs c v = setRegAt rs c v'
@@ -60,53 +86,71 @@ cmdSet :: Regs -> Char -> Integer -> Regs
 cmdSet rs c v = setRegAt rs c v
 
 tick :: Machine -> Instruction -> Machine
-tick (rs, freq, p) (cmd, ch, v, vp)
-  | cmd == SND = (rs, getRegAt rs ch, p + 1)
-  | cmd == RCV = (rs, freq, p + 1)
-  | cmd == JGZ = (rs, freq, p')
-  | otherwise  = (apply rs (cmd, ch, v, vp), freq, p + 1)
-  where v' = fromIntegral $ if' (vp == '*') v (getRegAt rs vp)
-        p' = if' ((getRegAt rs ch) > 0) (p + v') (p + 1)
+tick (rs, p, inQ, outQ) (cmd, dual1, dual2)
+  | cmd == SND = (rs, p + 1, inQ, outQ ++ [v1])
+  | cmd == RCV = (cmdSet rs c1 (head inQ), p + 1, tail inQ, outQ)
+  | cmd == JGZ = (rs, p', inQ, outQ)
+  | otherwise  = (apply rs (cmd, dual1, dual2), p + 1, inQ, outQ)
+  where v2 = fromIntegral $ evalInt rs dual2
+        v1 = evalInt rs dual1
+        c1 = evalChar dual1
+        p' = if' (v1 > 0) (p + v2) (p + 1)
 
-run :: Machine -> [Instruction] -> Integer
-run (rs, freq, p) ins
-  | (p - 1) > length ins = freq
-  | cmd == RCV     = freq
-  | otherwise      = run (tick (rs, freq, p) (cmd, ch, v, vp)) ins
-  where (cmd, ch, v, vp) = head (drop p ins) 
+run :: Machine -> [Instruction] -> Machine
+run (rs, p, inQ, outQ) ins
+  | (p - 1) > length ins            = (rs, p, inQ, outQ)
+  | cmd == RCV && (length inQ == 0) = (rs, p, inQ, outQ)
+  -- | cmd == RCV && (length inQ > 0)  = (rs, p, inQ, outQ)
+  | otherwise = run (tick (rs, p, inQ, outQ) (cmd, reg, dual)) ins
+  where (cmd, reg, dual) = ins!!p
+
+synch :: [Instruction] -> (Machine, Machine) -> (Machine, Machine)
+synch ins ((r1, p1, i1, o1), (r2, p2, i2, o2))
+  | length i1 == 0 = ((r1, p1, i1, o1), (r2, p2, i2, o2))
+  | otherwise      = synch ins ((r1', p1', o2', []), (r2', p2', i2', o2'))
+  where (r1', p1', i1', o1') = run (r1, p1, i1, []) ins
+        (r2', p2', i2', o2') = run (r2, p2, o1', []) ins
+
+synch' :: [Instruction] -> (Machine, Machine) -> (Machine, Machine)
+synch' ins ((r1, p1, i1, o1), (r2, p2, i2, o2))
+  | length i1 == 0 = ((r1, p1, i1, o1), (r2, p2, i2, o2))
+  | otherwise      = ((r1', p1', o2', []), (r2', p2', i2', o2'))
+  where (r1', p1', i1', o1') = run (r1, p1, i1, []) ins
+        (r2', p2', i2', o2') = run (r2, p2, o1', []) ins
+
+getOutputs :: (Machine, Machine) -> ([Integer], [Integer])
+getOutputs ((_,_,_,o1), (_,_,_,o2)) = (o1, o2)
+
+recordSends :: (Machine, Machine) -> Int
+recordSends (_, (_,_,_,o2)) = length o2
 
 main = do 
   f <- readFile "input_18.txt"
   let ins = map (parseLine) $ lines f
 
-  -- let ins = [(SET, 'a', 1, '*'),  (ADD, 'a', 2, '*'), (MUL, 'a', -1, 'a'),
-  --            (MOD, 'a', 5, '*'),
-  --            (SND, 'a', 0, '*'),  (SET, 'a', 0, '*'), (RCV, 'a', 0, '*'),
-  --            (JGZ, 'a', -1, '*'), (SET, 'a', 1, '*'), (JGZ, 'a', -2, '*')]
+  -- let ins = [(SET, 'a', 1, False), (ADD, 'a', 2, False),
+  --            (MUL, 'a', -1, True), (MOD, 'a', 5, False),
+  --            (SND, 'a', 0, False), (SET, 'a', 0, False),
+  --            (RCV, 'a', 0, False), (JGZ, 'a', -1, False),
+  --            (SET, 'a', 1, False), (JGZ, 'a', -2, False)]
 
   let rs = zip ['a','b','f','i','p'] $ replicate 5 0
-  let m = (rs, 0, 0)
+  let m = (rs, 0, [],[]) :: Machine
 
-  --putStrLn $ show m
-  --putStrLn $ show ins
+  putStr "Part 1: "
+  let (regs, ptr, inQ, outQ) = run m ins
+  putStrLn . show . last $ outQ
 
-  let n = run m ins
-  putStrLn $ show n
-
-  --putStrLn $ show ins
-
--- set a 1
--- add a 2
--- mul a a
--- mod a 5
--- snd a
--- set a 0
--- rcv a
--- jgz a -1
--- set a 1
--- jgz a -2
-
---     The first four instructions set a to 1, add 2 to it, square it, and then set it to itself modulo 5, resulting in a value of 4.
---     Then, a sound with frequency 4 (the value of a) is played.
---     After that, a is set to 0, causing the subsequent rcv and jgz instructions to both be skipped (rcv because a is 0, and jgz because a is not greater than 0).
---     Finally, a is set to 1, causing the next jgz instruction to activate, jumping back two instructions to another jump, which jumps again to the rcv, which ultimately triggers the recover operation.
+  putStr "Part 2: "
+  let rs1 = cmdSet regs 'p' 0
+  let rs2 = cmdSet regs 'p' 1
+  -- run once to get a usable state for synch
+  let (r1, p1, i1, o1) = run (rs1, 0, [], []) ins
+  let (r2, p2, i2, o2) = run (rs2, 0, o1, []) ins
+  -- record how many times we've sent a message
+  let p0 = length o2
+  -- keep repeating synch until there are no inputs
+  let k' = drop 1 $ iterate (synch' ins) ((r1, p1, o2, []), (r2, p2, [], []))
+  let p = takeWhile(\(_, (_, _, _, o)) -> length o > 0) k'
+  -- add these to the first lot of inputs
+  putStrLn $ show ((sum $ map (recordSends) p) + p0)
