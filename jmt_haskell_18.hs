@@ -1,8 +1,6 @@
 import Data.List
 import Data.List.Split
 
-import Debug.Trace
-
 type Regs = [(Char, Integer)]
 data Command = ADD | JGZ | MUL | MOD | RCV | SND | SET deriving (Eq, Show)
 type Dual = (Char, Integer, Bool) -- true = use char
@@ -36,11 +34,6 @@ parseLine s
         cmd = s'!!0 -- three char string
         d1 = charToDual (s'!!1)
         d2 = charToDual (s'!!2)
-        -- ch = head $ s'!!1 -- single char
-        -- t = s'!!2
-        -- b = (head t) `elem` ['a'..'z']
-        -- v = if' (b) (-1) (read (t) :: Integer)
-        -- d = (head t, v , b)
 
 evalInt :: Regs -> Dual -> Integer
 evalInt rs (c, v, b)
@@ -98,9 +91,8 @@ tick (rs, p, inQ, outQ) (cmd, dual1, dual2)
 
 run :: Machine -> [Instruction] -> Machine
 run (rs, p, inQ, outQ) ins
-  | (p - 1) > length ins            = (rs, p, inQ, outQ)
+  | p >= length ins                 = (rs, p, inQ, outQ)
   | cmd == RCV && (length inQ == 0) = (rs, p, inQ, outQ)
-  -- | cmd == RCV && (length inQ > 0)  = (rs, p, inQ, outQ)
   | otherwise = run (tick (rs, p, inQ, outQ) (cmd, reg, dual)) ins
   where (cmd, reg, dual) = ins!!p
 
@@ -127,12 +119,6 @@ recordSends (_, (_,_,_,o2)) = length o2
 main = do 
   f <- readFile "input_18.txt"
   let ins = map (parseLine) $ lines f
-
-  -- let ins = [(SET, 'a', 1, False), (ADD, 'a', 2, False),
-  --            (MUL, 'a', -1, True), (MOD, 'a', 5, False),
-  --            (SND, 'a', 0, False), (SET, 'a', 0, False),
-  --            (RCV, 'a', 0, False), (JGZ, 'a', -1, False),
-  --            (SET, 'a', 1, False), (JGZ, 'a', -2, False)]
 
   let rs = zip ['a','b','f','i','p'] $ replicate 5 0
   let m = (rs, 0, [],[]) :: Machine
