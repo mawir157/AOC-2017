@@ -34,33 +34,24 @@ split3 (x:y:z:xs) = p ++ (split3 xs)
         p = zipWith3 (\a1 a2 a3 -> [a1, a2, a3]) x3 y3 z3
 
 matchGrid :: Grid -> Grid -> Bool
-matchGrid g1 g2
-  | length g1 == 2 = matchGrid2 g1 g2
-  | otherwise      = matchGrid3 g1 g2
+matchGrid g1 g2 = f (length g1) g1 g2
+  where f n g1 g2 = (elem g2 $ allConfigs n g1)
 
-matchGrid3 :: Grid -> Grid -> Bool
-matchGrid3 [[a,b,c],[d,e,f],[g,h,j]] g2
-  | [[a,b,c],[d,e,f],[g,h,j]] == g2 = True
-  | [[c,f,j],[b,e,h],[a,d,g]] == g2 = True
-  | [[j,h,g],[f,e,d],[c,b,a]] == g2 = True
-  | [[g,d,a],[h,e,b],[j,f,c]] == g2 = True
-  | [[a,d,g],[b,e,h],[c,f,j]] == g2 = True
-  | [[g,h,j],[d,e,f],[a,b,c]] == g2 = True
-  | [[j,f,c],[h,e,b],[g,d,a]] == g2 = True
-  | [[c,b,a],[f,e,d],[j,h,g]] == g2 = True
-  | otherwise                       = False
+ref :: Grid -> Grid
+ref gs = map (reverse) gs
 
-matchGrid2 :: Grid -> Grid -> Bool
-matchGrid2 [[a, b],[c, d]] g2
-  | [[a, b],[c, d]] == g2 = True
-  | [[b, d],[a, c]] == g2 = True
-  | [[c, a],[d, b]] == g2 = True
-  | [[d, c],[b, a]] == g2 = True
-  | [[a, c],[b, d]] == g2 = True
-  | [[b, a],[d, c]] == g2 = True
-  | [[c, d],[a, b]] == g2 = True
-  | [[d, b],[c, a]] == g2 = True
-  | otherwise             = False
+rot2 :: Grid -> Grid
+rot2 [[a, b],[c, d]] = [[b, d],[a, c]]
+
+rot3 :: Grid -> Grid
+rot3 [[a,b,c],[d,e,f],[g,h,j]] = [[c,f,j],[b,e,h],[a,d,g]]
+
+allConfigs :: Int -> Grid -> [Grid]
+allConfigs n g
+  | n == 2 = g2 ++ map (ref) g2
+  | n == 3 = g3 ++ map (ref) g3
+  where g2 = [g, rot2 g, rot2$rot2 g, rot2.rot2$rot2 g]
+        g3 = [g, rot3 g, rot3$rot3 g, rot3.rot3$rot3 g]
 
 applyRule :: [Rule] -> Grid -> Grid
 applyRule [] g = error (show g)
