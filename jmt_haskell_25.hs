@@ -4,7 +4,7 @@ data Direction = L | R | N deriving (Eq, Show)
 data Label = HALT | X | A | B | C | D | E | F deriving (Eq, Show)
 
 --(tape, head, current Label)
-type TuringState = ([Char], Int, Label)
+type TuringState = (Seq.Seq Char, Int, Label)
 
 --(cur, scan, print, move, next)
 type Instruction  = (Label, Char, Char, Direction, Label)
@@ -23,17 +23,17 @@ findInstruction ts xs = head xs'
         xs' = dropWhile(\(a,b,_,_,_) -> (a /= cur) || (b /= scanned)) xs
 
 ---------------------------- Code for updating tape ----------------------------
-tapeRead :: Int -> [Char] -> Char
+tapeRead :: Int -> Seq.Seq Char -> Char
 tapeRead n xs
   | (n >= length xs) || (n < 0) = error ("read past the end of the tape: " ++ (show n))
-  | otherwise     = head $ drop n xs
+  | otherwise     = Seq.index xs n
 
-tapeWrite :: Int -> Char -> [Char] -> [Char]
+tapeWrite :: Int -> Char -> Seq.Seq Char -> Seq.Seq Char
 tapeWrite n x xs
   | n >= length xs || (n < 0) = error ("write past the end of the tape: " ++ (show n))
-  | otherwise      = (take n xs) ++ [x] ++ drop (n + 1) xs
+  | otherwise      = Seq.update n x xs
 
-updateTape :: Int -> Instruction -> [Char] -> [Char]
+updateTape :: Int -> Instruction -> Seq.Seq Char -> Seq.Seq Char
 updateTape hd (_, _, p, _, _) tape
   | p == 'N'  = tape                  -- do nothing
   | p == 'E'  = tapeWrite hd '_' tape -- erase character at head
@@ -84,9 +84,10 @@ bb5 = [(A,'0','1',R,B),
        (F,'1','0',R,E)]
 
 main = do
-  let p = 10000
-  let ts = ((replicate (p) '0'), 25, A)
+  let p = 7000
+  let tape = Seq.fromList (replicate (p) '0')
+  let ts = (tape, 25, A)
 
+  putStr "Part 1: "
   let (ts',_,_) = runFor 12302209 ts bb5
-  putStrLn $ show ts'
-  putStrLn . show . length $ filter (=='1') ts'
+  putStrLn . show . Seq.length $ Seq.filter (=='1') ts'
