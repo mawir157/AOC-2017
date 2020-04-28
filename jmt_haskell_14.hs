@@ -2,6 +2,19 @@ import Data.List.Split
 import Data.Bits
 import Text.Printf
 
+import Data.List
+import Data.Maybe
+
+if' True  x _ = x
+if' False _ y = y
+
+getIndices :: (a -> Bool) -> [a] -> [Int]
+getIndices f x = map (snd) $ filter (f . fst) k
+  where k = zip x [0,1..]
+
+dropElements :: (Eq a) => [a] -> [a] -> [a]
+dropElements x r = filter (\t -> not $ t `elem` r) x
+
 hexToBinArray :: Char -> [Int]
 hexToBinArray c
   | c == '0' = [0,0,0,0]
@@ -58,10 +71,51 @@ createLine :: [Int] -> [Int]
 createLine xs = k
   where (_,_,t) = foldl apply (0,0,[0,1..255]) xs
         j = concat . map (intToHexString) $ reduce t
-        k = finalStep j
+        k = finalStep j 
+
+doLine :: Int -> [Int] -> [(Int,Int)]
+doLine n x = zip (getIndices (== 1) x) (repeat n)
+  where k = zip x [0,1..]
+
+toPairs :: Int -> [[Int]] -> [(Int,Int)]
+toPairs _ [] = []
+toPairs n (x:xs) = (doLine n x) ++ (toPairs (n+1) xs)
+
+nghbr :: (Int,Int) -> (Int,Int) -> Bool
+nghbr (x1,y1) (x2,y2) = ((x1 == x2) && (y1 + 1 == y2)) ||
+                        ((x1 == x2) && (y1 - 1 == y2)) ||
+                        ((x1 + 1 == x2) && (y1 == y2)) ||
+                        ((x1 - 1 == x2) && (y1 == y2))
+
+isNeighbour :: [(Int,Int)] -> (Int,Int) -> Bool
+isNeighbour [] _ = False
+isNeighbour (x:xs) t
+  | nghbr x t = True
+  | otherwise = isNeighbour xs t
+
+getRegion ::  ([(Int,Int)], [(Int,Int)])-> ([(Int,Int)], [(Int,Int)])
+getRegion ([], todo) = getRegion ([head todo], tail todo)
+getRegion (rgn, todo)
+  | length s == 0 = (rgn, todo)
+  | otherwise     = getRegion (rgn', todo')
+  where s = filter (isNeighbour rgn) todo
+        rgn' = rgn ++ s
+        todo' = dropElements todo s
+
+getAllRegions :: [(Int,Int)] -> [[(Int,Int)]]
+getAllRegions [] = []
+getAllRegions t = [r] ++ getAllRegions t'
+  where (r, t') = getRegion ([], t)
 
 main = do
   let is = map (createInput "jxqlasbh") [0,1..127]
   let ts = map (createLine) is
   putStr "Part 1: "
   putStrLn . show . sum $ concat ts
+
+  let pairs = toPairs 0 ts
+  let s = getAllRegions $ pairs
+  putStr "Part 2: "
+  putStrLn . show $ length s
+
+
